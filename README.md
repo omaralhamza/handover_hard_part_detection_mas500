@@ -73,8 +73,14 @@ handover_hard_part_detection_mas500/
     ├── checkerboard_module.py      # Checkerboard detection & pose estimation
     └── README.md                   # Code documentation
 └── README.md                       # Project documentation
+Other codes that are included but not needed to run the project such as:
+check_intrnsic.py                   # Get the facory intrinsic parameters of the connected camera based on the resolution used.
+Use the following codes if you want to run checkerboard calibration isntead of using the factory:
+cam_cal_class.py, updated_realsense_cam_capture.py 
+draw_helpers.py                      # Mainly not used in the current setup but very helpful for debugging 
 ```
 
+## Code overview in the README INSIDE THE scripts_hand_over FOLDER
 
 
 
