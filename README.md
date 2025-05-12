@@ -80,10 +80,12 @@ cam_cal_class.py, updated_realsense_cam_capture.py
 draw_helpers.py                      # Mainly not used in the current setup but very helpful for debugging 
 ```
 
-## Code overview in the README INSIDE THE scripts_hand_over FOLDER
+
 
 
 
 
 ## Maintainer
 **Omar Alhamza** — <omaraalhamza@gmail.com>
+
+## Code overview in the README INSIDE THE scripts_hand_over FOLDER
