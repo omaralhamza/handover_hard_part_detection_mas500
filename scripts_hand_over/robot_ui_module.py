@@ -154,7 +154,7 @@ def grip_object_at_position(bot, robot_x, robot_y, robot_z):
 
 
     print(f"[DEBUG] Lowering to grip position at Z={grip_z:.3f}")
-    bot.arm.set_ee_pose_components(x=robot_x+0.013, y=robot_y, z=grip_z)
+    bot.arm.set_ee_pose_components(x=robot_x+0.015, y=robot_y, z=grip_z)
     time.sleep(2)
 
     print("[DEBUG] Activating gripper to grasp the object")
