@@ -174,8 +174,8 @@ mtx = np.array([[fx, 0, cx],
 dist = np.zeros(5, dtype=np.float32)
 
 # Robot offsets (in mm)
-ROBOT_OFFSET_X_MM = 12.0 * 10     # 113 mm
-ROBOT_OFFSET_Y_MM = 14.3 * 10     # 147 mm
+ROBOT_OFFSET_X_MM = 11.0 * 10     # 113 mm
+ROBOT_OFFSET_Y_MM = 14.5 * 10     # 147 mm
 
 # --------------------------------------------------------------------
 # Transformation from Board -> Robot
