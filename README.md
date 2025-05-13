@@ -80,7 +80,18 @@ cam_cal_class.py, updated_realsense_cam_capture.py
 draw_helpers.py                      # Mainly not used in the current setup but very helpful for debugging 
 ```
 
+## Experimenting
 
+Press **w** during runtime to toggle logging of frame data:
+
+- **c**: log camera-factory and camera-hand coordinates  
+- **h**: log checkerboard (factory / hand) raw coordinates  
+- **r**: log RANSAC-filtered robot coordinates  
+
+When logging is active, each line in your CSV will begin with:
+
+| Timestamp           | Label | PxCenter | Depth_m | Cam_fac_XYZ_m     | Cam_hand_XYZ_m    | CB_fac_raw_XYZ_m  | CB_hand_raw_XYZ_m | Rob_fac_ransac_XYZ_m | Rob_hand_ransac_XYZ_m |
+|---------------------|-------|----------|---------|-------------------|-------------------|-------------------|-------------------|----------------------|-----------------------|
 
 
 
