@@ -2,7 +2,7 @@ from ultralytics import YOLO
 import numpy as np
 from collections import defaultdict
 
-# Path to your trained YOLO model
+# Path to YOLO model
 yolo_model_path = "/home/omar/handover_hard_part_detection_mas500/scripts_hand_over/best.pt"
 yolo_model = YOLO(yolo_model_path)
 
@@ -84,7 +84,7 @@ def run_yolo_detections(color_image, depth_frame, mtx, dist, last_R, last_tvec):
                 "center": (cx_box, cy_box),
                 "world": (Xw, Yw, Zw),
                 "camera_m": (Xc, Yc, Zc),
-                "corners_robot": []  # can fill in later
+                "corners_robot": []  
             })
 
     return detection_list
