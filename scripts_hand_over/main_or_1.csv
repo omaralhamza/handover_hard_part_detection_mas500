@@ -1,1 +1,2 @@
-Timestamp,Label,PxCenter,Depth_m,CF,CH,WF,WH,WF_R,WH_R
+Timestamp,Label,PxCenter,Depth_m,Cam_fac_XYZ_m,Cam_hand_XYZ_m,CB_fac_raw_XYZ_m,CB_hand_raw_XYZ_m,Rob_fac_ransac_XYZ_m,Rob_hand_ransac_XYZ_m
+1747155842.6849864,#Buttons_1,"(940, 582)",0.901,"(-0.039, 0.012, 0.901)","(-0.024, -0.004, 0.901)","(-0.002, 0.185, 0.013)","(0.012, 0.168, 0.009)","(0.328, -0.122, 0.002)","(0.311, -0.108, 0.002)"

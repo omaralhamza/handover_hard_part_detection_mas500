@@ -146,11 +146,27 @@ from draw_helpers import draw_crosshairs
 from camera_realsense import initialize_camera, get_frames, stop_camera
 from plane_fitting_module import plane_fit_checkerboard
 
-# 2) Camera Intrinsics (pixels)
-fx = 1349.4283447265625
-fy = 1350.435791015625
-cx = 998.71630859375
-cy = 563.6248168945312
+# --------------------------------------------------------------------
+# Query RealSense for factory intrinsics (1920×1080) + distortion
+# --------------------------------------------------------------------
+pipeline_intr = rs.pipeline()
+cfg_intr      = rs.config()
+cfg_intr.enable_stream(rs.stream.color, 1920, 1080, rs.format.bgr8, 30)
+profile_intr  = pipeline_intr.start(cfg_intr)
+intr          = profile_intr.get_stream(rs.stream.color) \
+                          .as_video_stream_profile() \
+                          .get_intrinsics()
+pipeline_intr.stop()
+
+fx, fy = intr.fx, intr.fy
+cx, cy = intr.ppx, intr.ppy
+mtx     = np.array([[fx, 0, cx],
+                    [0, fy, cy],
+                    [0,  0,  1]], dtype=np.float32)
+dist    = np.array(intr.coeffs, dtype=np.float32)
+
+print(f"[INFO] Factory intrinsics: fx={fx:.3f}, fy={fy:.3f}, cx={cx:.3f}, cy={cy:.3f}")
+print(f"[INFO] Distortion coeffs: {dist.tolist()}")
 
 mtx = np.array([[fx, 0, cx],
                 [0, fy, cy],
@@ -158,8 +174,8 @@ mtx = np.array([[fx, 0, cx],
 dist = np.zeros(5, dtype=np.float32)
 
 # Robot offsets (in mm)
-ROBOT_OFFSET_X_MM = 11.3 * 10     # 115 mm
-ROBOT_OFFSET_Y_MM = 14.7 * 10     # 147 mm
+ROBOT_OFFSET_X_MM = 12.0 * 10     # 113 mm
+ROBOT_OFFSET_Y_MM = 14.3 * 10     # 147 mm
 
 # --------------------------------------------------------------------
 # Transformation from Board -> Robot
@@ -292,8 +308,22 @@ def main():
     file_exists = os.path.isfile(csv_fn)
     csv_f = open(csv_fn, "a", newline="")
     csv_w = csv.writer(csv_f)
+
+    # Write header only once
     if not file_exists:
-        csv_w.writerow(["Timestamp","Label","PxCenter","Depth_m","CF","CH","WF","WH","WF_R","WH_R"])
+        csv_w.writerow([
+            "Timestamp",             # UNIX time (s)
+            "Label",                 # Detection hashtag
+            "PxCenter",              # Box center in pixels
+            "Depth_m",               # Avg. depth at center (m)
+            "Cam_fac_XYZ_m",         # Factory-camera 3D point (X,Y,Z) in CB frame (m)
+            "Cam_hand_XYZ_m",        # Hand-camera 3D point    (X,Y,Z) in CB frame (m)
+            "CB_fac_raw_XYZ_m",      # Checkerboard-frame raw fac (X,Y,Z) in m
+            "CB_hand_raw_XYZ_m",     # Checkerboard-frame raw hand (X,Y,Z) in m
+            "Rob_fac_ransac_XYZ_m",  # Robot-frame fac + RANSAC Z   (m)
+            "Rob_hand_ransac_XYZ_m"  # Robot-frame hand + RANSAC Z  (m)
+        ])
+
 
     save_folder = "/home/omar/Cameras/scripts/exp_2_ran"
     if not os.path.exists(save_folder):
@@ -577,10 +607,15 @@ def main():
             # 's' = Snapshot code (original)
             # -------------------------------------------------------------
             if key_char == 's':
-                snapshot = color_image.copy()
-                raw_path = save_image_in_folder("raw", snapshot, "raw")
-                yolo_path = save_image_in_folder("yolo", color_image, "yolo")
-                print(f"[INFO] Raw image saved: {raw_path}")
+                raw_img  = raw_frame.copy()
+                yolo_img = color_image.copy()
+
+                # save raw (no annotations)
+                raw_path  = save_image_in_folder("raw", raw_img,  "raw")
+                # save with YOLO & checkerboard annotations
+                yolo_path = save_image_in_folder("yolo", yolo_img, "yolo")
+
+                print(f"[INFO] Raw image saved:  {raw_path}")
                 print(f"[INFO] YOLO image saved: {yolo_path}\n")
 
                 if plane_model_global is not None:
@@ -680,82 +715,92 @@ def main():
                 else:
                     print("[INFO] No detection results available for UI.")
 
+
+
             # -------------------------------------------------------------
             # 'w' = Logging code integration
             # -------------------------------------------------------------
+            # -------------------------------------------------------------
             elif key_char == 'w':
-                have_pose_and_plane = (last_rvec is not None and last_tvec is not None and plane_model_global is not None)
-                if not have_pose_and_plane:
+                # 1) Check that we have a valid checkerboard pose and plane
+                if last_rvec is None or last_tvec is None or plane_model_global is None:
                     print("[WARN] Checkerboard or plane not valid -> skip log.")
                     continue
-
-                # Save the combined image
+                # 2) Save combined RGB+depth image
                 now_ts = time.time()
-                fname = f"{script_name}_{int(now_ts)}.png"
-                outp = os.path.join(save_folder, fname)
-
-                # Make a depth visualization for the logging image
-                clipped_depth = np.clip(depth_image.astype(np.float32), 0.3, 1.5)
-                depth_norm = (clipped_depth - 0.3) / (1.5 - 0.3)
-                depth_8u = (depth_norm * 255).astype(np.uint8)
-                depth_vis = cv2.applyColorMap(depth_8u, cv2.COLORMAP_JET)
-
-                disp_logging = color_image.copy()
-                cv2.imwrite(outp, np.hstack((disp_logging, depth_vis)))
+                fname  = f"{script_name}_{int(now_ts)}.png"
+                outp   = os.path.join(save_folder, fname)
+                clipped = np.clip(depth_image.astype(np.float32), 0.3, 1.5)
+                normed  = ((clipped - 0.3)/(1.5-0.3)*255).astype(np.uint8)
+                depth_vis = cv2.applyColorMap(normed, cv2.COLORMAP_JET)
+                cv2.imwrite(outp, np.hstack((color_image, depth_vis)))
                 print(f"[INFO] Saved image {outp} for logging.")
 
-                # Also use "hand camera" intrinsics from logging code
-                hand_fx = 1340.15318
-                hand_fy = 1342.81937
-                hand_cx = 975.419561
-                hand_cy = 587.808154
+                # 3) Hand-camera intrinsics
+                hand_fx, hand_fy = 1340.15318, 1342.81937
+                hand_cx, hand_cy = 975.419561, 587.808154
 
-                for i, det in enumerate(last_detections):
+                # 4) Per-detection logging
+                for det in last_detections:
+                    # a) Pixel center + depth
                     x1, y1, x2, y2 = det["box"]
-                    ctr_px = ((x1+x2)//2, (y1+y2)//2)
+                    ctr_px  = ((x1+x2)//2, (y1+y2)//2)
                     depth_m = get_average_depth(depth_frame, ctr_px[0], ctr_px[1], delta=1)
 
-                    fac_3d = pixel_to_camera(ctr_px[0], ctr_px[1], depth_m, cx, cy, fx, fy)
-                    hand_3d = pixel_to_camera(ctr_px[0], ctr_px[1], depth_m, hand_cx, hand_cy, hand_fx, hand_fy)
+                    # b) Back-project to both cameras (metres)
+                    cam_fac  = pixel_to_camera(ctr_px[0], ctr_px[1],
+                                            depth_m, cx, cy, fx, fy)
+                    cam_hand = pixel_to_camera(ctr_px[0], ctr_px[1],
+                                            depth_m,
+                                            hand_cx, hand_cy,
+                                            hand_fx, hand_fy)
 
-                    wf = transform_to_checkerboard(fac_3d, last_rvec, last_tvec)
-                    wh = transform_to_checkerboard(hand_3d, last_rvec, last_tvec)
-                    if wf[2] < 0:
-                        wf[2] = -wf[2]
-                    if wh[2] < 0:
-                        wh[2] = -wh[2]
+                    # c) Transform into checkerboard frame
+                    cb_fac  = transform_to_checkerboard(cam_fac,  last_rvec, last_tvec)
+                    cb_hand = transform_to_checkerboard(cam_hand, last_rvec, last_tvec)
+                    cb_fac[2], cb_hand[2] = abs(cb_fac[2]), abs(cb_hand[2])
 
-                    if plane_model_global is not None:
-                        a_c, b_c, c_c, d_c, norm_abc = plane_model_global
-                        dist_fac = (a_c*wf[0] + b_c*wf[1] + c_c*wf[2] + d_c)/(norm_abc+1e-12)
-                        dist_hand = (a_c*wh[0] + b_c*wh[1] + c_c*wh[2] + d_c)/(norm_abc+1e-12)
-                        wf_r = wf.copy()
-                        wf_r[2] = wf[2] - dist_fac
-                        wh_r = wh.copy()
-                        wh_r[2] = wh[2] - dist_hand
-                    else:
-                        wf_r = wf.copy()
-                        wh_r = wh.copy()
+                    # d) RANSAC Z in mm; factory XY from det["world"], hand XY from cb_hand
+                    Xw_mm_fac, Yw_mm_fac, Zr_mm = det["world"]
+                    Xw_mm_hand = cb_hand[0] * 1000.0
+                    Yw_mm_hand = cb_hand[1] * 1000.0
 
-                    csv_w.writerow([
+                    # Compute robot-frame points (metres)
+                    rob_fac  = tuple(v/1000.0 for v in
+                                    world_to_robot_coords_mm(Xw_mm_fac, Yw_mm_fac, Zr_mm))
+                    rob_hand = tuple(v/1000.0 for v in
+                                    world_to_robot_coords_mm(Xw_mm_hand, Yw_mm_hand, Zr_mm))
+
+                    # e) Write to CSV
+                    row = [
                         now_ts,
                         det["hashtag"],
                         str(ctr_px),
                         f"{depth_m:.3f}",
-                        format_xyz(fac_3d),
-                        format_xyz(hand_3d),
-                        format_xyz(wf),
-                        format_xyz(wh),
-                        format_xyz(wf_r),
-                        format_xyz(wh_r)
-                    ])
-                    print(f"Logged => {det['hashtag']}, Px {ctr_px}, Depth {depth_m:.3f}, "
-                          f"CF {format_xyz(fac_3d)}, CH {format_xyz(hand_3d)}, "
-                          f"WF {format_xyz(wf)}, WH {format_xyz(wh)}, "
-                          f"WF_R {format_xyz(wf_r)}, WH_R {format_xyz(wh_r)}")
+                        format_xyz(cam_fac),
+                        format_xyz(cam_hand),
+                        format_xyz(cb_fac),
+                        format_xyz(cb_hand),
+                        format_xyz(rob_fac),
+                        format_xyz(rob_hand),
+                    ]
+                    csv_w.writerow(row)
+                    csv_f.flush()
 
-                csv_f.flush()
-                print("[INFO] Data logged via 'w' key.")
+                    # f) Print the exact same row to terminal
+                    print("Logged:", 
+                        f"Time={row[0]:.5f},",
+                        f"Tag={row[1]},",
+                        f"Px={row[2]},",
+                        f"Depth={row[3]} m,",
+                        f"Cam_fac={row[4]},",
+                        f"Cam_hand={row[5]},",
+                        f"CB_fac_raw={row[6]},",
+                        f"CB_hand_raw={row[7]},",
+                        f"Rob_fac_ransac={row[8]},",
+                        f"Rob_hand_ransac={row[9]}")
+
+
 
             # -------------------------------------------------------------
             # 'u' = Manual UI Display
@@ -803,4 +848,3 @@ def main():
 
 if __name__=="__main__":
     main()
-
