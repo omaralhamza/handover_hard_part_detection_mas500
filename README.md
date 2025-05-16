@@ -42,7 +42,12 @@ chmod +x xsarm_amd64_install.sh
 yolo_model_path = "/home/omar/handover_hard_part_detection_mas500/scripts_hand_over/best.pt"
 
 
+
 ### 1  Launch Interbotix Robot
+Open 2 terminals:
+1.run the launch command 
+2. Go the root folder where you have main_or_1.py
+NOTE: send robot to sleep in rviz before you kill the terminal or disconnect power
 If you are using the **VX300** model:
 ```bash
 ros2 launch interbotix_xsarm_control xsarm_control.launch.py robot_model:=vx300
