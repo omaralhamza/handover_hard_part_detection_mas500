@@ -171,11 +171,11 @@ print(f"[INFO] Distortion coeffs: {dist.tolist()}")
 mtx = np.array([[fx, 0, cx],
                 [0, fy, cy],
                 [0,  0,  1]], dtype=np.float32)
-dist = np.zeros(5, dtype=np.float32)
+
 
 # Robot offsets (in mm)
-ROBOT_OFFSET_X_MM = 11.0 * 10     # 113 mm
-ROBOT_OFFSET_Y_MM = 14.5 * 10     # 147 mm
+ROBOT_OFFSET_X_MM = 11.3 * 10     # 113 mm
+ROBOT_OFFSET_Y_MM = 14.7 * 10     # 147 mm
 
 # --------------------------------------------------------------------
 # Transformation from Board -> Robot
@@ -425,8 +425,8 @@ def main():
                     try:
                         plane_model, inliers = plane_fit_checkerboard(
                             depth_image_m, all_corners, fx, fy, cx, cy,
-                            distance_threshold=0.007,
-                            ransac_n=6,
+                            distance_threshold=0.006,
+                            ransac_n=11,
                             num_iterations=1000
                         )
                         if plane_model is not None:
