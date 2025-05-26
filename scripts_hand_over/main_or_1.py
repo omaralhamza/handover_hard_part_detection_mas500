@@ -8,18 +8,13 @@ import numpy as np
 import cv2
 import tkinter as tk
 from collections import defaultdict
-
-# ============================
-# 1) Extra imports & logging code from your logging script
-# ============================
 import csv
 import open3d as o3d
 import pyrealsense2 as rs
 from scipy.optimize import linear_sum_assignment
-import apriltag  # NEW: Import the apriltag library
-
+import apriltag 
 # ============================
-# 2) Helpers from logging script
+#  Helpers from logging script
 # ============================
 def distance_point_to_plane_in_cb(point_cb, plane_cb):
     a, b, c, d = plane_cb
@@ -92,21 +87,16 @@ def draw_crosshair_and_dashed_lines(image, dash_len=20, gap_len=10):
         cv2.line(image, (ctr[0], y), (ctr[0], y_end), (255,105,180), 2)
         y += dash_len+gap_len
 
-# Removed: assign_detection_names_13 and all related anchor naming functionality
+
 
 def find_april_tag_corners(image, mtx, dist):
-    """
-    Detect AprilTags using the apriltag library.
-    This function looks for an AprilTag with tag_id 22.
-    If found, it returns (True, corners) where corners is a numpy array of shape (4,1,2).
-    In practice, you should further adjust parameters and handle multiple detections as needed.
-    """
+
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-    # -- Only changed this part to remove quad_sigma, everything else is the same --
+
     options = apriltag.DetectorOptions(
         families='tag36h11',
-        quad_decimate=2.0  # Keep downsample for fewer edges, removing 'quad_sigma'
+        quad_decimate=2.0 
     )
     detector = apriltag.Detector(options)
 
@@ -118,18 +108,17 @@ def find_april_tag_corners(image, mtx, dist):
 
     for detection in detections:
         if detection.tag_id == 22:
-            # detection.corners is (4,2); reshape to (4,1,2)
             corners = detection.corners.reshape((4,1,2)).astype(np.float32)
             return True, corners
     return False, None
 
 # --------------------------------------------------------------------
-# 3) The main runtime code (preserved exactly from your second script)
+#  The main runtime code (preserved exactly from your second script)
 # --------------------------------------------------------------------
 
 selection_active = False
 
-# 1) Import our custom modules
+
 from robot_ui_module import (
     initialize_robot,
     display_ui
@@ -220,7 +209,7 @@ def save_image_in_folder(folder, image, prefix):
     cv2.imwrite(full_path, image)
     return full_path
 
-# Optional: Debug function for Z computations
+
 def debug_z_computations(label, raw_depth_m, avg_depth_m, Xc_m, Yc_m, Zc_m, tilt_mm, plane_mm, final_mm):
     """
     Prints detailed debug information about the Z computation for a detection.
@@ -233,7 +222,7 @@ def debug_z_computations(label, raw_depth_m, avg_depth_m, Xc_m, Yc_m, Zc_m, tilt
     print(f"    plane-based Zw_mm   : {plane_mm:.3f} mm")
     print(f"    FINAL Zw_mm         : {final_mm:.3f} mm\n")
 
-# Optional: Debug function for printing snapshot info
+
 def print_snapshot_debug(detections):
     """
     Prints a summary of each detection’s computed world coordinates.
@@ -245,7 +234,7 @@ def print_snapshot_debug(detections):
         _, _, Zr = world_to_robot_coords_mm(Xw, Yw, Zw)
         print(f"  {lbl}: |Zw_mm| = {abs(Zw):.2f} mm, Robot Z = {Zr/1000:.3f} m")
 
-# Robot Initialization and UI Functions
+
 def initialize_robot():
     """
     Initializes the robot using Interbotix modules.
@@ -276,7 +265,7 @@ def move_robot_to_center(bot, center_x_m, center_y_m, center_z_m):
     time.sleep(3)
     detecting_home_position(bot)
 
-# Compute camera position in checkerboard (world) frame
+
 def compute_camera_position_world(R, tvec):
     """
     Given the rotation matrix (R) and translation vector (tvec) from solvePnP,
@@ -285,7 +274,7 @@ def compute_camera_position_world(R, tvec):
     """
     if tvec.shape == (3,):
         tvec = tvec.reshape((3,1))
-    camera_pos = -R.T @ tvec  # in mm
+    camera_pos = -R.T @ tvec  
 
     if camera_pos[2] < 0:
         camera_pos[2] = -camera_pos[2]
@@ -312,7 +301,7 @@ def main():
     # Write header only once
     if not file_exists:
         csv_w.writerow([
-            "Timestamp",             # UNIX time (s)
+            "Timestamp",             
             "Label",                 # Detection hashtag
             "PxCenter",              # Box center in pixels
             "Depth_m",               # Avg. depth at center (m)
@@ -388,7 +377,7 @@ def main():
 
             # -------------------------------------------------------------
             # Combine available corner detections for plane fitting
-            # (Original approach: combine both checkerboard and AprilTag corners)
+            # -------------------------------------------------------------
             if success_cb and success_ap:
                 all_corners = np.vstack((corners2, tag_corners))
                 plane_source = "c+a"
@@ -402,13 +391,13 @@ def main():
                 all_corners = None
                 plane_source = "None"
 
-            # --- Draw golden markers for all detected corners ---
+            # --- Draw golden markers for all detected corners 
             if all_corners is not None:
                 for corner in all_corners:
                     pt = tuple(corner.ravel().astype(int))
                     cv2.circle(color_image, pt, 5, (0,215,255), -1)
 
-            # --- Display plane fitting source info in the top right corner (in larger font) ---
+            # --- Display plane fitting source info in the top right corner (in larger font) 
             text = "Plane Fitting: " + plane_source
             text_size, _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 1.2, 3)
             text_x = color_image.shape[1] - text_size[0] - 10
@@ -519,8 +508,7 @@ def main():
                         smoothed_plane_mm = ema_plane_z[hashtag]
                         final_Zw_mm = -smoothed_plane_mm
 
-                    # Do not force final_Zw_mm to be positive so that objects under the plane are preserved.
-                    # final_Zw_mm = abs(final_Zw_mm)
+
 
                     # store coords
                     det["world_zperp"] = (Xw_mm_corr, Yw_mm_corr, Zw_mm_corr)
@@ -532,7 +520,7 @@ def main():
 
 
                     # --------------------------------------------------------------------
-                    # NEW CODE: Compute robot coordinates for the bounding box corners
+                    # Compute robot coordinates for the bounding box corners
                     # --------------------------------------------------------------------
                     box_points = [(x1, y1), (x2, y1), (x2, y2), (x1, y2)]
                     robot_corners = []
@@ -840,11 +828,10 @@ def main():
             cv2.waitKey(1)
 
     finally:
-        # Clean up
         stop_camera(pipeline)
         cv2.destroyAllWindows()
         csv_f.close()
-        # Optionally, shut down the robot if needed.
+
 
 if __name__=="__main__":
     main()

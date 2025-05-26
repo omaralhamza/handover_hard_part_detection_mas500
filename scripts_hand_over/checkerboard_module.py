@@ -14,11 +14,7 @@ objp[:, :2] = np.mgrid[0:CHECKERBOARD[0], 0:CHECKERBOARD[1]].T.reshape(-1, 2) * 
 
 def find_checkerboard_pose(color_image, mtx, dist):
     """
-    Finds the checkerboard corners in 'color_image' and runs solvePnP.
-    Returns:
-      (True, rvec, tvec, corners2) if success,
-      otherwise (False, None, None, None).
-    tvec is in mm because our 'objp' uses mm.
+    tvec is in mm because 'objp' uses mm.
     """
     gray = cv2.cvtColor(color_image, cv2.COLOR_BGR2GRAY)
     ret, corners = cv2.findChessboardCorners(gray, CHECKERBOARD, None)

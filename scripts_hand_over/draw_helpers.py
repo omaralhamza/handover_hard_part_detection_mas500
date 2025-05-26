@@ -37,12 +37,6 @@ def draw_dashed_line(image, pt1, pt2, color=(255,105,180), thickness=2, num_dash
         cv2.line(image, (xi1, yi1), (xi2, yi2), color, thickness)
 
 def draw_yolo_results(color_image, detections):
-    """
-    Draws YOLO detections on the image.
-    Each detection is expected to have:
-      "box", "hashtag", "conf", "center", "world"
-    where "world" are the checkerboard coordinates in mm.
-    """
     for det in detections:
         x1, y1, x2, y2 = det["box"]
         hashtag = det["hashtag"]

@@ -1,18 +1,5 @@
 #!/usr/bin/env python3
-"""
-visualize_bboxes.py
 
-Quickly preview YOLO-format bounding boxes on images of arbitrary size.
-Scales large images down so the longest side ≤ maxside, draws boxes
-(color-coded by class id), and shows each window for `wait` seconds
-(or until you press 'q').
-
-Usage:
-    python visualize_bboxes.py \
-        --imgdir /path/to/images \
-        --lbldir /path/to/labels \
-        [--maxside 1280] [--wait 1.0] [--sample 100]
-"""
 
 import cv2
 import argparse
@@ -20,7 +7,6 @@ import random
 from pathlib import Path
 
 def yolo_to_pixel(box, W, H):
-    """Convert YOLO [xc, yc, bw, bh] normalized coords to pixel coords."""
     xc, yc, bw, bh = map(float, box)
     x1 = int((xc - bw/2) * W)
     y1 = int((yc - bh/2) * H)
@@ -29,14 +15,11 @@ def yolo_to_pixel(box, W, H):
     return x1, y1, x2, y2
 
 def get_color(class_id: int):
-    """Deterministic pseudo-color map for class ids."""
-    # simple hashing to get reproducible but distinct colors
     return ((class_id * 37) % 255,
             (class_id * 17) % 255,
             (class_id * 29) % 255)
 
 def visualize(img_dir: Path, lbl_dir: Path, maxside: int, wait: float, sample: int):
-    # collect image paths
     exts = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff"}
     imgs = [p for p in sorted(img_dir.iterdir()) if p.suffix.lower() in exts]
     if sample and sample < len(imgs):
@@ -52,14 +35,12 @@ def visualize(img_dir: Path, lbl_dir: Path, maxside: int, wait: float, sample: i
             continue
 
         H, W = img.shape[:2]
-        # scale factor to fit maxside
         scale = min(1.0, maxside / max(H, W))
         if scale < 1.0:
             disp = cv2.resize(img, (int(W*scale), int(H*scale)), interpolation=cv2.INTER_AREA)
         else:
             disp = img.copy()
 
-        # overlay boxes
         lbl_file = lbl_dir / f"{img_path.stem}.txt"
         if lbl_file.exists():
             for line in lbl_file.read_text().splitlines():
@@ -68,7 +49,6 @@ def visualize(img_dir: Path, lbl_dir: Path, maxside: int, wait: float, sample: i
                     continue
                 cid, *box = parts
                 x1, y1, x2, y2 = yolo_to_pixel(box, W, H)
-                # apply same scale
                 x1, y1, x2, y2 = map(lambda v: int(v * scale), (x1, y1, x2, y2))
                 color = get_color(int(cid))
                 cv2.rectangle(disp, (x1, y1), (x2, y2), color, 2)
@@ -78,7 +58,6 @@ def visualize(img_dir: Path, lbl_dir: Path, maxside: int, wait: float, sample: i
             cv2.putText(disp, "NO LABEL", (10, 30),
                         cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0,0,255), 2)
 
-        # show
         cv2.imshow("BBox Preview (q to quit)", disp)
         key = cv2.waitKey(int(wait * 1000)) & 0xFF
         cv2.destroyWindow("BBox Preview (q to quit)")

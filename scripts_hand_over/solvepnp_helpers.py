@@ -25,11 +25,7 @@ def recheck_solvePnP_on_raw(
     square_size,
     CAMERA_HEIGHT
 ):
-    """
-    Re-check solvePnP on 'raw_color_copy' (un-annotated).
-    If success, draws the axes + dashed lines on 'color_image'.
-    Returns True if success, False otherwise.
-    """
+
     gray_for_s = cv2.cvtColor(raw_color_copy, cv2.COLOR_BGR2GRAY)
     ret_s, corners_s = cv2.findChessboardCorners(gray_for_s, (9, 6), None)
     if not ret_s:
@@ -41,8 +37,6 @@ def recheck_solvePnP_on_raw(
     if not success_s:
         print("[ERROR] solvePnP failed.")
         return False
-
-    # Draw axes
     axis_3d_s = np.float32([[3,0,0],[0,3,0],[0,0,-3]]).reshape(-1,3) * square_size
     imgpts_s, _ = cv2.projectPoints(axis_3d_s, rvec_s, tvec_s, mtx, dist)
     origin_s = tuple(corners2_s[0].ravel().astype(int))
@@ -57,8 +51,7 @@ def recheck_solvePnP_on_raw(
     cv2.putText(color_image, "X", x_pt_s, cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2, cv2.LINE_AA)
     cv2.putText(color_image, "Y", y_pt_s, cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2, cv2.LINE_AA)
     cv2.putText(color_image, "Z", z_pt_s, cv2.FONT_HERSHEY_SIMPLEX, 1, (255,0,0), 2, cv2.LINE_AA)
-
-    # Extend X, Y with dashed lines
+    
     extended_len = 8
     Xplus_3D  = np.float32([[ extended_len,  0,  0]]).reshape(-1,3)*square_size
     Xminus_3D = np.float32([[-extended_len,  0,  0]]).reshape(-1,3)*square_size
@@ -96,9 +89,9 @@ def recheck_solvePnP_on_raw(
     print(f"X: {camera_position_s[0][0]:.2f}, Y: {camera_position_s[1][0]:.2f}, Z: {abs(camera_position_s[2][0]):.2f} mm")
     print(f"Expected CAMERA_HEIGHT = {CAMERA_HEIGHT} mm")
 
-    # Fix sign if negative
+
     if camera_position_s[2][0] < 0:
-        print("\n⚠️ Z-Axis is inverted! Fixing it...")
+        print("\n Z-Axis is inverted! Fixing it...")
         camera_position_s[2][0] = abs(camera_position_s[2][0])
 
     height_error = abs(camera_position_s[2][0] - CAMERA_HEIGHT)

@@ -3,7 +3,6 @@ import pathlib
 
 BASE = pathlib.Path("/home/omar/Downloads/NEW_YOLO_TEST_MAS_500")
 
-# Iterate all subdirectories ending with 'y'
 for sub in BASE.iterdir():
     if not (sub.is_dir() and sub.name.endswith("y")):
         continue
@@ -16,11 +15,9 @@ for sub in BASE.iterdir():
         if not file.is_file():
             continue
 
-        # Skip if already has the prefix
         if file.name.startswith(sub.name + "_"):
             continue
 
-        # Only rename typical label/image extensions (optional)
         if file.suffix.lower() not in {".jpg", ".jpeg", ".png", ".txt"}:
             continue
 

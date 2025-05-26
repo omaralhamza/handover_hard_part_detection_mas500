@@ -8,12 +8,12 @@ from interbotix_common_modules.common_robot.robot import robot_shutdown, robot_s
 
 selection_active = False
 
-# Safety limit configuration
+
 MAX_REACH       = 0.75
 SAFETY_FACTOR   = 0.80
 SAFETY_LIMIT    = MAX_REACH * SAFETY_FACTOR
 
-# Robot constants & functions
+
 def initialize_robot():
     bot = InterbotixManipulatorXS(
         robot_model='vx300',
@@ -42,7 +42,7 @@ def move_robot_to_center(bot, center_x_m, center_y_m, center_z_m):
     time.sleep(3)
     detecting_home_position(bot)
 
-# Advanced Bounding Box Path Movement
+
 TRAVEL_SPEED = 0.5
 TIME_SCALE_EXPONENT = 0.35
 SHORT_DISTANCE_THRESHOLD = 0.01
@@ -69,7 +69,6 @@ def move_robot_around_corners(bot, corners, base_z, loops=1, steps=1):
     if not corners:
         print("[WARN] No corners to move around.")
         return
-    # Safety: abort entire bounding-box move if any corner is out-of-bounds
     for x, y, _ in corners:
         if abs(x) > SAFETY_LIMIT or abs(y) > SAFETY_LIMIT:
             print(f"[WARN] Bounding-box move skipped: corner out of safety bounds (X={x:.3f}, Y={y:.3f}, limit ±{SAFETY_LIMIT:.2f} m)")
@@ -98,12 +97,10 @@ def move_robot_around_corners(bot, corners, base_z, loops=1, steps=1):
 
 
 def grip_object_at_position(bot, robot_x, robot_y, robot_z):
-    # compute radial offset of 1.5cm along the direction of the object in XY
     angle = math.atan2(robot_y, robot_x)
-    offset = 0.015  # 1.5 cm
+    offset = 0.015  
     adj_x = robot_x + offset * math.cos(angle)
     adj_y = robot_y + offset * math.sin(angle)
-    # safety check after applying offset
     if abs(adj_x) > SAFETY_LIMIT or abs(adj_y) > SAFETY_LIMIT:
         print(f"[WARN] Grip target out of safety bounds after offset: X={adj_x:.3f}, Y={adj_y:.3f} (limit ±{SAFETY_LIMIT:.2f} m)")
         return
@@ -128,7 +125,6 @@ def grip_object_at_position(bot, robot_x, robot_y, robot_z):
     print("[DEBUG] Releasing gripper after reaching home")
     bot.gripper.release()
 
-# Tkinter UI for selection
 def close_menu(root):
     global selection_active
     root.destroy()

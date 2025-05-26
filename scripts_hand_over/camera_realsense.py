@@ -4,7 +4,6 @@ import numpy as np
 def initialize_camera():
     """
     Initializes the RealSense pipeline and returns (pipeline, align).
-    Depth and color streams are started.
     """
     pipeline = rs.pipeline()
     config = rs.config()
@@ -19,13 +18,6 @@ def initialize_camera():
     return pipeline, align
 
 def get_frames(pipeline, align):
-    """
-    Waits for new frames, aligns them to color, and returns:
-       color_image (BGR), depth_image (uint16),
-       depth_frame (pyrealsense2 depth frame).
-    get_distance(...) on depth_frame yields meters.
-    If something fails, returns (None, None, None).
-    """
     frames = pipeline.wait_for_frames()
     aligned_frames = align.process(frames)
     color_frame = aligned_frames.get_color_frame()
@@ -38,5 +30,5 @@ def get_frames(pipeline, align):
     return color_image, depth_image, depth_frame
 
 def stop_camera(pipeline):
-    """Stops the RealSense pipeline."""
+
     pipeline.stop()
